@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>网站会员</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <link rel="stylesheet" href="lib/layui/css/layui.css" media="all">
+    <script src="js/jquery.min.js"></script>
+</head>
+
+<body>
+
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto">
+            <div class="layui-form-item">
+
+            </div>
+        </div>
+
+        <div class="layui-card-body">
+            <div style="padding-bottom: 10px;">
+                 <button class="layui-btn layuiadmin-btn-useradmin" data-type="batchdel">删除</button>
+                 <button class="layui-btn layuiadmin-btn-useradmin" data-type="add">添加</button>
+            </div>
+
+            <table id="LAY-user-manage" lay-filter="LAY-user-manage"></table>
+            <script type="text/html" id="imgTpl">
+                <img style="display: inline-block; width: 50%; height: 100%;" src= {{ d.prcpath }}>
+            </script>
+            <script type="text/html" id="table-useradmin-webuser">
+
+                <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del"><i class="layui-icon layui-icon-delete"></i>删除</a>
+
+
+            </script>
+        </div>
+    </div>
+</div>
+
+<script src="lib/layui/layui.js"></script>
+<script>
+   $(function () {
+       let $user=JSON.parse(sessionStorage.getItem('user'))
+       let $url=JSON.parse(sessionStorage.getItem('url'))
+       layui.use(['form', 'table'], function () {
+           var $ = layui.$
+               , form = layui.form
+               , table = layui.table;
+           //用户管理
+           table.render({
+               elem: '#LAY-user-manage'
+               ,url: $url+'/showUsers' //模拟接口
+               ,method:'post'
+               ,headers:{Authorization:'yes',type:'1'}
+               , cols: [[
+                   { type: 'checkbox', fixed: 'left' },
+                   { type: 'numbers', width: 80, title: '序号', sort: true }
+                   , { field: 'username', title: '用户名', minWidth: 100 }
+                   , { field: 'password', title: '123456', minWidth: 100 }
+                   , { field: 'prcpath', title: '头像', width: 100, templet: '#imgTpl' }
+                   , { field: 'age', title: '年龄' }
+                   , { field: 'sex', title: '性别',templet: function (data) {
+                           if(data.sex==1){
+                               return '男'
+                           }
+                           if(data.sex==2){
+                               return '女'
+                           }
+                           return ''    } }
+                   , { field: 'nickname', title: '昵称' ,minWidth: 100}
+                   , { field: 'moblie', title: '手机' ,minWidth: 100}
+                   , { field: 'address', title: '地址' ,minWidth: 100}
+                   , { title: '操作', width: 150, align: 'center', fixed: 'right', toolbar: '#table-useradmin-webuser' }
+               ]]
+               , page: {
+                   layout: ['count', 'prev', 'page', 'next',  'refresh', 'skip']
+               }
+               , limit: 10
+               , height: 'full-220'
+               , text: { none: '无数据' }
+           });
+
+           //监听工具条
+           table.on('tool(LAY-user-manage)', function (obj) {
+               var data = obj.data;
+               if (obj.event === 'del') {
+                   layer.prompt({
+                       formType: 1
+                       , title: '敏感操作，请验证口令'
+                   }, function (value, index) {
+                       layer.close(index);
+
+
+                       if (value == 123456) {//口令
+                           layer.confirm('确定么', function (index) {
+                               // alert("我是要被删除的主键" + data.id)//被删除的主键
+
+                               $.ajax({
+                                   url:$url+"/delUserById",
+                                   dataType:'json',
+                                   type:'post',
+                                   data:{'id':data.id},
+                                   beforeSend: function(request) {
+                                       request.setRequestHeader("Authorization","yes").setRequestHeader("type","1")
+                                   },
+                                   success:function (res) {
+                                       switch (res.code) {
+                                           case 0:
+                                               layer.msg('成功')
+                                               table.reload('LAY-user-manage'); //数据刷新
+                                               break;
+                                           case 4:
+                                               layer.msg('失败')
+                                               break;
+                                       }
+                                   }
+                               })
+
+                               layer.close(index);
+                               // table.reload('LAY-user-manage');
+                           });
+
+                       } else {
+                           layer.msg('口令错误');
+                       }
+
+                   });
+               }
+           });
+
+
+
+           //监听搜索
+           form.on('submit(LAY-user-front-search)', function (data) {
+
+               var field = data.field;
+               // alert("我是搜索内容" + JSON.stringify(field))//搜索的值
+
+               //执行重载
+               table.reload('LAY-user-manage', {
+                   where: field,
+               });
+           });
+
+           //事件
+           var active = {
+               batchdel: function () {
+                   var checkStatus = table.checkStatus('LAY-user-manage')
+                       , checkData = checkStatus.data; //得到选中的数据
+
+                   if (checkData.length === 0) {
+                       return layer.msg('请选择数据');
+                   }
+                   layer.prompt({
+                       formType: 1
+                       , title: '敏感操作，请验证口令'
+                   }, function (value, index) {
+
+
+
+
+
+                       layer.close(index);
+
+
+
+
+
+                       if (value == 123456) {//口令
+                           layer.confirm('确定吗？', function (index) {
+                               let arr = new Array();
+                               for (let index = 0; index < checkData.length; index++) {
+                                   arr[index] = checkData[index].id
+                               }
+
+                               alert("批量删除的主键数组" + arr)//主键数组
+
+                               //执行 Ajax 把要删除的主键数组传输后台    批量删除
+                               /*
+                               admin.req({
+                                 url: 'xxx'
+                                 //,……
+                               });
+                               */
+                               //重载
+                               layer.close(index);
+                               table.reload('LAY-user-manage');
+                               // layer.msg('已删除');
+                               //关闭弹出层
+
+                           });
+                       } else {
+                           layer.msg('口令错误');
+                       }
+                   });
+               }
+               , add: function () {
+                   layer.open({
+                       type: 2
+                       , title: '添加'
+                       , content: 'usersform.html'
+                       , maxmin: true
+                       , area: ['600px', '600px']
+                       , btn: ['确定', '取消']
+                       , yes: function (index, layero) {
+                           var iframeWindow = window['layui-layer-iframe' + index]
+                               , submitID = 'LAY-user-front-submit'//iframe.html的submit的id
+                               , submit = layero.find('iframe').contents().find('#' + submitID);
+
+                           //监听提交
+                           iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+                               var field = data.field; //获取提交的字段
+                               // alert("我是添加的内容" + JSON.stringify(field))
+                               //提交 Ajax 成功后，静态更新表格中的数据
+                               $.ajax({
+                                   url:$url+"/addUser",
+                                   dataType:'json',
+                                   type:'post',
+                                   data:field,
+                                   beforeSend: function(request) {
+                                       request.setRequestHeader("Authorization","yes").setRequestHeader("type","1")
+                                   },
+                                   success:function (res) {
+                                       switch (res.code) {
+                                           case 0:
+                                               layer.msg('成功')
+                                               table.reload('LAY-user-manage'); //数据刷新
+                                               break;
+                                           case 4:
+                                               layer.msg('失败')
+                                               break;
+                                       }
+                                   }
+                               })
+                               // table.reload('LAY-user-front-submit'); //数据刷新
+                               layer.close(index); //关闭弹层
+                           });
+
+                           submit.trigger('click');
+                       }
+
+                       , success: function (layero, index) {
+
+                       }
+
+                   });
+               }
+           };
+
+           $('.layui-btn.layuiadmin-btn-useradmin').on('click', function () {
+               var type = $(this).data('type');
+               active[type] ? active[type].call(this) : '';
+           });
+       });
+   })
+
+</script>
+</body>
+
+</html>

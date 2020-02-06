@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.provider.mapper.UserMapper">
+
+    <select id="selectUserByUsernameAndPassword" resultType="model.entity.Users">
+        select * from users where username=#{username} and password=#{password}
+    </select>
+    <select id="selectAllBlog" resultType="model.entity.Blog">
+        select * from blog limit #{map.index},#{map.limit}
+    </select>
+    <select id="selectAllCount" resultType="java.lang.Long">
+        select count(*) from blog
+    </select>
+    <delete id="delBlogById">
+        delete from blog where id=#{id}
+    </delete>
+    <insert id="addBlog">
+        INSERT INTO blog (`content`,`publishtime`,`userid`)VALUES(#{content},SYSDATE(),#{userid})
+    </insert>
+    <select id="selectAllUsers" resultType="model.entity.Users">
+        select * from users where supper!=2 limit #{map.index},#{map.limit}
+    </select>
+    <select id="selectAllUsersCount" resultType="java.lang.Long">
+        select count(*) from users where supper!=2
+    </select>
+    <delete id="delUserById">
+        delete from users where id=#{id} and id != 1
+    </delete>
+    <insert id="addUser">
+INSERT INTO `users` (`username`,`password`,`age`,`sex`,`nickname`,`moblie`,`address`,`prcpath`)
+select #{username},#{password},#{age},#{sex},#{nickname},#{moblie},#{address},#{prcpath} from dual
+WHERE NOT EXISTS (SELECT `id` FROM users WHERE username= #{username})
+    </insert>
+
+
+</mapper>
